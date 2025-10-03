@@ -1,0 +1,5 @@
+{
+  "name": "YouTube Content Analyzer Prismora",
+  "description": "An AI-powered tool to analyze the likely content of a YouTube video based on its URL. It provides a report with percentage scores across various sensitive categories, helping users understand potential content themes before watching.",
+  "requestFramePermissions": []
+}
