@@ -4,19 +4,23 @@ import type { Video } from '../../types';
 
 const SavedVideos: React.FC = () => {
 	const [savedVideos, setSavedVideos] = useState<Video[]>([]);
-	const { addToHistory } = useAppContext();
+	const { addToHistory, user } = useAppContext();
 
 	useEffect(() => {
-		const savedVideosRaw = localStorage.getItem('savedVideos');
-		if (savedVideosRaw) {
-			setSavedVideos(JSON.parse(savedVideosRaw));
+		if (user) {
+			const savedVideosRaw = localStorage.getItem(`savedVideos_${user.id}`);
+			if (savedVideosRaw) {
+				setSavedVideos(JSON.parse(savedVideosRaw));
+			}
 		}
-	}, []);
+	}, [user]);
 
 	const handleRemoveVideo = (urlToRemove: string) => {
 		const updatedVideos = savedVideos.filter(video => video.url !== urlToRemove);
 		setSavedVideos(updatedVideos);
-		localStorage.setItem('savedVideos', JSON.stringify(updatedVideos));
+		if (user) {
+			localStorage.setItem(`savedVideos_${user.id}`, JSON.stringify(updatedVideos));
+		}
 	};
 
 	return (

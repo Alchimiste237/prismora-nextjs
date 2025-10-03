@@ -7,12 +7,19 @@ interface PlaylistsProps {
 }
 
 const Playlists: React.FC<PlaylistsProps> = ({ playlists }) => {
-	const { addToHistory } = useAppContext();
+	const { addToHistory, createPlaylist, user } = useAppContext();
+
+	const handleCreatePlaylist = () => {
+		const name = prompt('Enter playlist name:');
+		if (name && user) {
+			createPlaylist(name);
+		}
+	};
 	return (
 		<div className="w-full max-w-3xl mx-auto animate-fade-in text-left">
 			<div className="flex justify-between items-center mb-8">
 				<h2 className="text-3xl font-bold text-center text-gray-800">My Playlists</h2>
-				<button className="bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">Create New</button>
+				<button onClick={handleCreatePlaylist} className="bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">Create New</button>
 			</div>
 			{playlists.length === 0 ? (
 				<p className="text-gray-600 text-lg text-center">You haven't created any playlists yet.</p>

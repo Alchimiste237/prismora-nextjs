@@ -29,6 +29,7 @@ interface StateContextType {
   switchToParentMode: () => void;
   setVideoToAddToPlaylist: (video: Video | null) => void;
   handleAddToPlaylist: (playlistId: string) => void;
+  createPlaylist: (name: string) => Promise<void>;
   setAnalysisResult: (result: AnalysisReport | null) => void;
   setVideoDetails: (details: VideoDetails | null) => void;
   setCurrentUrl: (url: string) => void;
@@ -167,6 +168,7 @@ export const StateProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setUser(null);
     setPlaylists([]);
     localStorage.removeItem('user');
+    window.location.href = '/';
   };
 
   const switchToChildMode = () => {
@@ -288,6 +290,25 @@ export const StateProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   }, [user]);
 
+  const createPlaylist = useCallback(async (name: string) => {
+    if (!user) return;
+    try {
+      const response = await fetch('/api/playlists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, name }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setPlaylists(prev => [...prev, data.playlist]);
+      } else {
+        console.error('Failed to create playlist:', data.message);
+      }
+    } catch (error) {
+      console.error('Error creating playlist:', error);
+    }
+  }, [user]);
+
   const value = {
     user,
     mode,
@@ -306,6 +327,7 @@ export const StateProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     switchToParentMode,
     setVideoToAddToPlaylist,
     handleAddToPlaylist,
+    createPlaylist,
     setAnalysisResult,
     setVideoDetails,
     setCurrentUrl,

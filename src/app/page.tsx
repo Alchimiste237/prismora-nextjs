@@ -11,6 +11,7 @@ import Loader from '../../components/Loader';
 import ScanResult from '../../components/ScanResult';
 import ErrorDisplay from '../../components/ErrorDisplay';
 import SearchResults from '@/../components/SearchResults';
+import VideoPlayer from '../components/VideoPlayer';
 
 function extractVideoId(url: string): string | null {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -34,6 +35,7 @@ const HomePage: React.FC = () => {
   } = useAppContext();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedVideoForPlayer, setSelectedVideoForPlayer] = useState<VideoDetails | null>(null);
 
   const performAnalysis = useCallback(async (videoId: string, details: VideoDetails) => {
     setIsLoading(true);
@@ -74,9 +76,26 @@ const HomePage: React.FC = () => {
     }
   }, []);
 
-  const handleVideoSelect = useCallback(async (video: VideoDetails) => {
-      await performAnalysis(video.id, video);
-  }, [performAnalysis]);
+  const handleVideoSelect = useCallback((video: VideoDetails) => {
+      if (!user) {
+        alert("Please log in to view videos directly on the platform.");
+        return;
+      }
+      setSelectedVideoForPlayer(video);
+  }, [user]);
+
+  const handleScanOption = useCallback(async (option: 'quick' | 'detailed') => {
+    if (!selectedVideoForPlayer) return;
+    setSelectedVideoForPlayer(null); // Hide player, show loading
+    await performAnalysis(selectedVideoForPlayer.id, selectedVideoForPlayer);
+  }, [selectedVideoForPlayer, performAnalysis]);
+
+  const handleDelete = useCallback(() => {
+    setAnalysisResult(null);
+    setVideoDetails(null);
+    setCurrentUrl('');
+    setSelectedVideoForPlayer(null);
+  }, []);
 
   const handleSubmit = useCallback(async (query: string) => {
     const videoId = extractVideoId(query);
@@ -86,6 +105,7 @@ const HomePage: React.FC = () => {
     setAnalysisResult(null);
     setVideoDetails(null);
     setSearchResults([]);
+    setSelectedVideoForPlayer(null);
     setIsLoading(true);
 
     try {
@@ -111,16 +131,21 @@ const HomePage: React.FC = () => {
     if (isLoading) return <Loader />;
     if (error) return <ErrorDisplay message={error} />;
 
+    if (selectedVideoForPlayer) {
+      return <VideoPlayer videoDetails={selectedVideoForPlayer} onScanOption={handleScanOption} isLoading={isLoading} />;
+    }
+
     if (analysisResult && videoDetails && currentUrl) {
-      return <ScanResult 
-        result={analysisResult} 
-        videoDetails={videoDetails} 
-        url={currentUrl} 
-        user={user} 
-        onAddToPlaylistRequest={(video: Video) => setVideoToAddToPlaylist(video)} 
+      return <ScanResult
+        result={analysisResult}
+        videoDetails={videoDetails}
+        url={currentUrl}
+        user={user}
+        onAddToPlaylistRequest={(video: Video) => setVideoToAddToPlaylist(video)}
+        onDelete={handleDelete}
       />;
     }
-    
+
     if (searchResults.length > 0) {
         return <SearchResults results={searchResults} onVideoSelect={handleVideoSelect} />
     }

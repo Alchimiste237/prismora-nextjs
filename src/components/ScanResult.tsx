@@ -10,6 +10,7 @@ interface ScanResultProps {
   url: string;
   user: User | null;
   onAddToPlaylistRequest: (video: Video) => void;
+  onDelete?: () => void;
 }
 
 const getPrimaryConcern = (report: AnalysisReport) => {
@@ -29,7 +30,7 @@ const getPrimaryConcern = (report: AnalysisReport) => {
   };
 };
 
-const ScanResult: React.FC<ScanResultProps> = ({ result, videoDetails, url, user, onAddToPlaylistRequest }) => {
+const ScanResult: React.FC<ScanResultProps> = ({ result, videoDetails, url, user, onAddToPlaylistRequest, onDelete }) => {
   const { addToHistory } = useAppContext();
   const primaryConcern = getPrimaryConcern(result);
   // Build a list of categories with labels and percentages for display
@@ -43,13 +44,15 @@ const ScanResult: React.FC<ScanResultProps> = ({ result, videoDetails, url, user
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
-    const savedVideosRaw = localStorage.getItem('savedVideos');
-    if (savedVideosRaw) {
-      const savedVideos: Video[] = JSON.parse(savedVideosRaw);
-      const videoIsAlreadySaved = savedVideos.some(video => video.url === url);
-      setIsSaved(videoIsAlreadySaved);
+    if (user) {
+      const savedVideosRaw = localStorage.getItem(`savedVideos_${user.id}`);
+      if (savedVideosRaw) {
+        const savedVideos: Video[] = JSON.parse(savedVideosRaw);
+        const videoIsAlreadySaved = savedVideos.some(video => video.url === url);
+        setIsSaved(videoIsAlreadySaved);
+      }
     }
-  }, [url]);
+  }, [url, user]);
 
   const handleSaveForLater = useCallback(async () => {
     if (!user) return;
@@ -74,7 +77,7 @@ const ScanResult: React.FC<ScanResultProps> = ({ result, videoDetails, url, user
 
       if (data.success) {
         // Update localStorage for UI state
-        const savedVideosRaw = localStorage.getItem('savedVideos');
+        const savedVideosRaw = localStorage.getItem(`savedVideos_${user.id}`);
         const savedVideos: Video[] = savedVideosRaw ? JSON.parse(savedVideosRaw) : [];
         if (!savedVideos.some(video => video.url === url)) {
           const newSavedVideo: Video = {
@@ -83,7 +86,7 @@ const ScanResult: React.FC<ScanResultProps> = ({ result, videoDetails, url, user
             thumbnailUrl: videoDetails.thumbnailUrl,
           };
           const updatedSavedVideos = [...savedVideos, newSavedVideo];
-          localStorage.setItem('savedVideos', JSON.stringify(updatedSavedVideos));
+          localStorage.setItem(`savedVideos_${user.id}`, JSON.stringify(updatedSavedVideos));
         }
         setIsSaved(true);
       } else {
@@ -104,7 +107,18 @@ const ScanResult: React.FC<ScanResultProps> = ({ result, videoDetails, url, user
       <h2 className="text-3xl font-bold text-center text-gray-800 mb-4">{result.videoTitle}</h2>
       
       <div className="flex justify-center mb-4 rounded-lg overflow-hidden shadow-lg border-2 border-gray-300">
-        <img src={videoDetails.thumbnailUrl} alt={`Thumbnail for ${result.videoTitle}`} className="w-full object-cover" />
+        {user ? (
+          <iframe
+            src={`https://www.youtube.com/embed/${videoDetails.id}`}
+            title={`YouTube video player for ${result.videoTitle}`}
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="w-full aspect-video"
+          ></iframe>
+        ) : (
+          <img src={videoDetails.thumbnailUrl} alt={`Thumbnail for ${result.videoTitle}`} className="w-full object-cover" />
+        )}
       </div>
       
       <p className="text-center text-gray-700 font-semibold text-xl my-6">{result.channelName}</p>
@@ -134,16 +148,23 @@ const ScanResult: React.FC<ScanResultProps> = ({ result, videoDetails, url, user
       </div>
       
       <div className="flex flex-col gap-4 mt-8">
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => addToHistory({ url, videoTitle: result.videoTitle, thumbnailUrl: videoDetails.thumbnailUrl })}
-          className="w-full text-center bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105"
+        {!user && (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => addToHistory({ url, videoTitle: result.videoTitle, thumbnailUrl: videoDetails.thumbnailUrl })}
+            className="w-full text-center bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105"
+          >
+            Play Video
+          </a>
+        )}
+        <button
+          onClick={onDelete}
+          className="w-full bg-gray-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-600 transition duration-300 ease-in-out transform hover:scale-105"
         >
-          Play Video
-        </a>
-        <button className="w-full bg-gray-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-600 transition duration-300 ease-in-out transform hover:scale-105">Delete</button>
+          Delete
+        </button>
         {user && (
           <>
             <button 
