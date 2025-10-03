@@ -4,11 +4,11 @@ import React, { useState } from 'react';
 import { useAppContext } from '../context/StateContext';
 
 interface HeaderProps {
-  onNavigate?: (view: 'home' | 'saved' | 'playlists' | 'history' | 'login' | 'signup' | 'about' | 'contact') => void;
+  onNavigate?: (view: 'home' | 'saved' | 'playlists' | 'history' | 'scan-history' | 'login' | 'signup' | 'about' | 'contact') => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ onNavigate = () => {} }) => {
-  const { user, logout, switchToChildMode } = useAppContext();
+  const { user, logout, switchToChildMode, isHydrated } = useAppContext();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   return (
@@ -22,8 +22,9 @@ const Header: React.FC<HeaderProps> = ({ onNavigate = () => {} }) => {
       >
         Prismora
       </h1>
-      <nav>
-        <ul className="flex items-center space-x-8 text-gray-600 font-medium">
+      {isHydrated && (
+        <nav>
+          <ul className="flex items-center space-x-8 text-gray-600 font-medium">
           <li>
             <span
               className="hover:text-purple-600 transition-colors cursor-pointer"
@@ -100,6 +101,17 @@ const Header: React.FC<HeaderProps> = ({ onNavigate = () => {} }) => {
                       </span>
                     </li>
                     <li>
+                      <span
+                        onClick={() => { onNavigate('scan-history'); setDropdownOpen(false); }}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 cursor-pointer"
+                        role="button"
+                        tabIndex={0}
+                        onKeyPress={(e) => { if (e.key === 'Enter') { onNavigate('scan-history'); setDropdownOpen(false); } }}
+                      >
+                        Scan History
+                      </span>
+                    </li>
+                    <li>
                       <button onClick={() => { switchToChildMode(); setDropdownOpen(false); }} className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Switch to Child Mode</button>
                     </li>
                     <li><hr className="my-1"/></li>
@@ -136,8 +148,9 @@ const Header: React.FC<HeaderProps> = ({ onNavigate = () => {} }) => {
               </li>
             </>
           )}
-        </ul>
-      </nav>
+          </ul>
+        </nav>
+      )}
     </header>
   );
 };

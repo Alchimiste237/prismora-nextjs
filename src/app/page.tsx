@@ -19,13 +19,21 @@ function extractVideoId(url: string): string | null {
 }
 
 const HomePage: React.FC = () => {
-  const { user, setVideoToAddToPlaylist } = useAppContext();
+  const {
+    user,
+    setVideoToAddToPlaylist,
+    analysisResult,
+    setAnalysisResult,
+    videoDetails,
+    setVideoDetails,
+    currentUrl,
+    setCurrentUrl,
+    searchResults,
+    setSearchResults,
+    addToScanHistory,
+  } = useAppContext();
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [analysisResult, setAnalysisResult] = useState<AnalysisReport | null>(null);
-  const [videoDetails, setVideoDetails] = useState<VideoDetails | null>(null);
-  const [searchResults, setSearchResults] = useState<VideoDetails[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [currentUrl, setCurrentUrl] = useState<string>('');
 
   const performAnalysis = useCallback(async (videoId: string, details: VideoDetails) => {
     setIsLoading(true);
@@ -40,11 +48,22 @@ const HomePage: React.FC = () => {
       const cleanedJson = resultJsonString.replace(/```json\n|```/g, '').trim();
       const result: Omit<AnalysisReport, 'videoTitle' | 'channelName'> = JSON.parse(cleanedJson);
       
-      setAnalysisResult({
+      const fullResult = {
           ...result,
           videoTitle: details.title,
           channelName: details.channelTitle,
-      });
+      };
+
+      setAnalysisResult(fullResult);
+
+      // Add to scan history if user is logged in
+      if (user) {
+        addToScanHistory({
+          url: `https://www.youtube.com/watch?v=${videoId}`,
+          analysisResult: fullResult,
+          videoDetails: details,
+        });
+      }
 
     } catch (err) {
       console.error("Analysis failed:", err);

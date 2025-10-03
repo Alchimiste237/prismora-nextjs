@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useAppContext } from '../context/StateContext';
 import type { Video } from '../../types';
 
 const SavedVideos: React.FC = () => {
 	const [savedVideos, setSavedVideos] = useState<Video[]>([]);
+	const { addToHistory } = useAppContext();
 
 	useEffect(() => {
 		const savedVideosRaw = localStorage.getItem('savedVideos');
@@ -33,6 +35,7 @@ const SavedVideos: React.FC = () => {
 								href={video.url}
 								target="_blank"
 								rel="noopener noreferrer"
+								onClick={() => addToHistory(video)}
 								className="text-purple-600 hover:underline font-medium truncate"
 								title={video.videoTitle}
 							>

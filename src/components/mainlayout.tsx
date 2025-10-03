@@ -9,7 +9,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAppContext();
   const router = useRouter();
 
-  const onNavigate = (view: 'home' | 'saved' | 'playlists' | 'history' | 'login' | 'signup' | 'about' | 'contact') => {
+  const onNavigate = (view: 'home' | 'saved' | 'playlists' | 'history' | 'scan-history' | 'login' | 'signup' | 'about' | 'contact') => {
     switch (view) {
       case 'home':
         router.push('/');
@@ -22,6 +22,9 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         break;
       case 'history':
         router.push('/history');
+        break;
+      case 'scan-history':
+        router.push('/scan-history');
         break;
       case 'login':
         router.push('/login');

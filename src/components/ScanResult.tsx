@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useAppContext } from '../context/StateContext';
 import type { AnalysisReport, Video, User, VideoDetails } from '../../types';
 import { CATEGORY_LABELS } from '../../types';
 import ProgressBar from './ProgressBar';
@@ -29,6 +30,7 @@ const getPrimaryConcern = (report: AnalysisReport) => {
 };
 
 const ScanResult: React.FC<ScanResultProps> = ({ result, videoDetails, url, user, onAddToPlaylistRequest }) => {
+  const { addToHistory } = useAppContext();
   const primaryConcern = getPrimaryConcern(result);
   // Build a list of categories with labels and percentages for display
   const categories: { key: keyof Omit<AnalysisReport, 'videoTitle'|'channelName'>; label: string; percentage: number }[] = [
@@ -49,21 +51,49 @@ const ScanResult: React.FC<ScanResultProps> = ({ result, videoDetails, url, user
     }
   }, [url]);
 
-  const handleSaveForLater = useCallback(() => {
-    const savedVideosRaw = localStorage.getItem('savedVideos');
-    const savedVideos: Video[] = savedVideosRaw ? JSON.parse(savedVideosRaw) : [];
-    
-    if (!savedVideos.some(video => video.url === url)) {
-      const newSavedVideo: Video = {
-        url,
-        videoTitle: result.videoTitle,
-        thumbnailUrl: videoDetails.thumbnailUrl,
-      };
-      const updatedSavedVideos = [...savedVideos, newSavedVideo];
-      localStorage.setItem('savedVideos', JSON.stringify(updatedSavedVideos));
-      setIsSaved(true);
+  const handleSaveForLater = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const response = await fetch('/api/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          video: {
+            url,
+            videoTitle: result.videoTitle,
+            thumbnailUrl: videoDetails.thumbnailUrl,
+          },
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update localStorage for UI state
+        const savedVideosRaw = localStorage.getItem('savedVideos');
+        const savedVideos: Video[] = savedVideosRaw ? JSON.parse(savedVideosRaw) : [];
+        if (!savedVideos.some(video => video.url === url)) {
+          const newSavedVideo: Video = {
+            url,
+            videoTitle: result.videoTitle,
+            thumbnailUrl: videoDetails.thumbnailUrl,
+          };
+          const updatedSavedVideos = [...savedVideos, newSavedVideo];
+          localStorage.setItem('savedVideos', JSON.stringify(updatedSavedVideos));
+        }
+        setIsSaved(true);
+      } else {
+        alert(data.message || 'Failed to save video');
+      }
+    } catch (error) {
+      console.error('Save error:', error);
+      alert('An error occurred while saving the video');
     }
-  }, [url, result.videoTitle, videoDetails.thumbnailUrl]);
+  }, [url, result.videoTitle, videoDetails.thumbnailUrl, user]);
 
   const handleAddToPlaylistClick = () => {
     onAddToPlaylistRequest({ url, videoTitle: result.videoTitle, thumbnailUrl: videoDetails.thumbnailUrl });
@@ -104,7 +134,15 @@ const ScanResult: React.FC<ScanResultProps> = ({ result, videoDetails, url, user
       </div>
       
       <div className="flex flex-col gap-4 mt-8">
-        <a href={url} target="_blank" rel="noopener noreferrer" className="w-full text-center bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105">Play Video</a>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => addToHistory({ url, videoTitle: result.videoTitle, thumbnailUrl: videoDetails.thumbnailUrl })}
+          className="w-full text-center bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105"
+        >
+          Play Video
+        </a>
         <button className="w-full bg-gray-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-600 transition duration-300 ease-in-out transform hover:scale-105">Delete</button>
         {user && (
           <>
